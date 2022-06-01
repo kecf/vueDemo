@@ -1,5 +1,13 @@
 <template>
-  <button @click="sendMessageToServer">给后台发送信息</button>
+  <div>
+    <p>{{ wsMessage }}</p>
+    <ul>
+      <li v-for="[key, value] in wsMap" :key="key">
+        {{ key }} -- {{ value }}
+      </li>
+    </ul>
+    <button @click="sendMessageToServer">给后台发送信息</button>
+  </div>
 </template>
 
 <script>
@@ -11,6 +19,8 @@ export default {
       webSocket: null,
       ws: '',
       wsTimer: null,
+      wsMessage: '此处为接收到的后端信息',
+      wsMap: null
     }
   },
   async mounted() {
@@ -27,6 +37,7 @@ export default {
     },
     wsInit() {
       this.ws = 'ws://localhost:8080/websocket/kcf'
+      this.wsMap = new Map()
       if (!this.wsIsRun) return
       this.wsDestroy()
       this.webSocket = new WebSocket(this.ws)
@@ -38,8 +49,18 @@ export default {
       console.log('ws建立连接成功')
     },
     wsMessageHandler(e) {
-      console.log('wsMessageHandler')
-      console.log(e)
+      try {
+        let wsJson = JSON.parse(e.data)
+        console.log("接收到后端json数据：" + wsJson)
+        for (let word in wsJson) {
+          this.wsMap.set(word, wsJson[word])
+          this.$forceUpdate()
+          console.log(this.wsMap)
+        }
+      } catch (exception) {
+        this.wsMessage = e.data
+        console.log("接收到后端信息：" + e.data)
+      }
     },
     wsCloseHanler(event) {
       console.log(event, 'ws关闭')

@@ -1,6 +1,5 @@
 <template>
   <div>
-    <p>WebSocket test</p>
     <WebSocket></WebSocket>
   </div>
 </template>
