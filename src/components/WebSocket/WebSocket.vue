@@ -1,12 +1,64 @@
 <template>
   <div>
     <p>{{ wsMessage }}</p>
-    <ul>
-      <li v-for="[key, value] in wsMap" :key="key">
-        {{ key }} -- {{ value }}
-      </li>
-    </ul>
     <button @click="sendMessageToServer">给后台发送信息</button>
+    <table>
+      <caption style="font-size: 24px">上一交易日信号</caption>
+      <thead>
+        <tr>
+          <th style="width: 150px">signal name</th>
+          <th style="width: 150px">event ID</th>
+          <th style="width: 200px">event time</th>
+          <th style="width: 150px">event source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="jsonObject in this.JsonsPrevDay" :key="jsonObject.eventId">
+          <td style="text-align: center" v-text="jsonObject.signalName"></td>
+          <td style="text-align: center" v-text="jsonObject.eventId"></td>
+          <td style="text-align: center" v-text="jsonObject.eventTime"></td>
+          <td style="text-align: center" v-text="jsonObject.eventSource"></td>
+        </tr>
+      </tbody>
+    </table>
+    <table>
+      <caption style="font-size: 24px">本交易日信号</caption>
+      <thead>
+      <tr>
+        <th style="width: 150px">signal name</th>
+        <th style="width: 150px">event ID</th>
+        <th style="width: 200px">event time</th>
+        <th style="width: 150px">event source</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr v-for="jsonObject in this.JsonsToday" :key="jsonObject.eventId">
+        <td style="text-align: center" v-text="jsonObject.signalName"></td>
+        <td style="text-align: center" v-text="jsonObject.eventId"></td>
+        <td style="text-align: center" v-text="jsonObject.eventTime"></td>
+        <td style="text-align: center" v-text="jsonObject.eventSource"></td>
+      </tr>
+      </tbody>
+    </table>
+    <table>
+      <caption style="font-size: 24px">上一交易日出现而本日未出现的信号</caption>
+      <thead>
+      <tr>
+        <th style="width: 150px">signal name</th>
+        <th style="width: 150px">event ID</th>
+        <th style="width: 200px">event time</th>
+        <th style="width: 150px">event source</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr v-for="jsonObject in this.JsonsError" :key="jsonObject.eventId">
+        <td style="text-align: center" v-text="jsonObject.signalName"></td>
+        <td style="text-align: center" v-text="jsonObject.eventId"></td>
+        <td style="text-align: center" v-text="jsonObject.eventTime"></td>
+        <td style="text-align: center" v-text="jsonObject.eventSource"></td>
+      </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -20,7 +72,9 @@ export default {
       ws: '',
       wsTimer: null,
       wsMessage: '此处为接收到的后端信息',
-      wsMap: null
+      JsonsPrevDay: null,
+      JsonsToday: null,
+      JsonsError: null,
     }
   },
   async mounted() {
@@ -37,7 +91,9 @@ export default {
     },
     wsInit() {
       this.ws = 'ws://localhost:8080/websocket/kcf'
-      this.wsMap = new Map()
+      this.JsonsPrevDay = []
+      this.JsonsToday = []
+      this.JsonsError = []
       if (!this.wsIsRun) return
       this.wsDestroy()
       this.webSocket = new WebSocket(this.ws)
@@ -51,12 +107,18 @@ export default {
     wsMessageHandler(e) {
       try {
         let wsJson = JSON.parse(e.data)
-        console.log("接收到后端json数据：" + wsJson)
-        for (let word in wsJson) {
-          this.wsMap.set(word, wsJson[word])
-          this.$forceUpdate()
-          console.log(this.wsMap)
+        switch (wsJson["type"]) {
+          case "topic3":
+            this.JsonsPrevDay.push(wsJson)
+            break
+          case "topic4":
+            this.JsonsToday.push(wsJson)
+            break
+          case "topic5":
+            this.JsonsError.push(wsJson)
+            break
         }
+        // this.$forceUpdate()
       } catch (exception) {
         this.wsMessage = e.data
         console.log("接收到后端信息：" + e.data)
