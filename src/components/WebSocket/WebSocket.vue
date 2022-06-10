@@ -41,21 +41,19 @@
       </tbody>
     </table>
     <table>
-      <caption style="font-size: 24px">上一交易日出现而本日未出现的信号</caption>
+      <caption style="font-size: 24px">异常信号</caption>
       <thead>
       <tr>
         <th style="width: 150px">signal name</th>
-        <th style="width: 150px">event ID</th>
-        <th style="width: 200px">event time</th>
         <th style="width: 150px">event source</th>
+        <th style="width: 150px">event type</th>
       </tr>
       </thead>
       <tbody>
-      <tr v-for="jsonObject in this.JsonsError" :key="jsonObject.eventId">
-        <td style="text-align: center" v-text="jsonObject.signalName"></td>
-        <td style="text-align: center" v-text="jsonObject.eventId"></td>
-        <td style="text-align: center" v-text="jsonObject.eventTime"></td>
-        <td style="text-align: center" v-text="jsonObject.eventSource"></td>
+      <tr v-for="[key, value] in this.JsonsError" :key="key">
+        <td style="text-align: center; color: red" v-text="value.signalName"></td>
+        <td style="text-align: center; color: red" v-text="value.eventSource"></td>
+        <td style="text-align: center; color: red" v-text="value.type"></td>
       </tr>
       </tbody>
     </table>
@@ -75,6 +73,7 @@ export default {
       JsonsPrevDay: null,
       JsonsToday: null,
       JsonsError: null,
+      colorMap: null
     }
   },
   async mounted() {
@@ -93,7 +92,10 @@ export default {
       this.ws = 'ws://localhost:8080/websocket/kcf'
       this.JsonsPrevDay = []
       this.JsonsToday = []
-      this.JsonsError = []
+      this.JsonsError = new Map();
+      this.colorMap = new Map();
+      this.colorMap.set('error', 'red')
+      this.colorMap.set('late', 'blue')
       if (!this.wsIsRun) return
       this.wsDestroy()
       this.webSocket = new WebSocket(this.ws)
@@ -108,14 +110,23 @@ export default {
       try {
         let wsJson = JSON.parse(e.data)
         switch (wsJson["type"]) {
-          case "topic3":
+          case "prevDay":
             this.JsonsPrevDay.push(wsJson)
             break
-          case "topic4":
+          case "today":
             this.JsonsToday.push(wsJson)
             break
-          case "topic5":
-            this.JsonsError.push(wsJson)
+          case "error":
+            this.JsonsError.set(wsJson["signalName"], wsJson)
+              console.log(wsJson["signalName"])
+            break
+          case "late":
+            this.JsonsError.set(wsJson["signalName"], wsJson)
+            break
+          case "normal":
+            if (this.JsonsError.has(wsJson["signalName"])) {
+              this.JsonsError.delete(wsJson["signalName"])
+            }
             break
         }
         // this.$forceUpdate()
