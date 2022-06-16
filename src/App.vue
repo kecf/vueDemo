@@ -1,15 +1,16 @@
 <template>
   <div>
-    <WebSocket></WebSocket>
+<!--    <WebSocket></WebSocket>-->
+    <PositionAlarm></PositionAlarm>
   </div>
 </template>
 
 <script>
-import WebSocket from './components/WebSocket/WebSocket'
+import PositionAlarm from './components/PositionAlarm/PositionAlarm'
 export default {
   name: "index",
   components: {
-    WebSocket
+    PositionAlarm
   },
 }
 </script>
